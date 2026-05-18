@@ -79,10 +79,11 @@ fi
 
 params="$(build_params_json "$@")"
 
-python3 - "$GATEWAY" "$path" "$SKILL_VERSION" "$WEREAD_API_KEY" "$params" <<'PY'
-import json, sys, urllib.request
+python3 - "$GATEWAY" "$path" "$SKILL_VERSION" "$params" <<'PY'
+import json, os, sys, urllib.request
 
-gateway, path, skill_version, api_key, params_raw = sys.argv[1:]
+gateway, path, skill_version, params_raw = sys.argv[1:]
+api_key = os.environ["WEREAD_API_KEY"]
 payload = {
     "api": path,
     "skill_version": skill_version,
