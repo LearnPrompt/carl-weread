@@ -1,7 +1,7 @@
 ---
 name: carl-weread
 description: 微信读书行动型阅读教练。根据用户最近的 Obsidian 日记、项目、选题和微信读书书架/笔记，推荐今天最该读的一小节，并把读后收获转成行动卡、原子笔记和内容选题线索。当用户说「今天读什么」「推荐一章」「读完了帮我消化」「把阅读变成行动」「本周阅读闭环」时触发。
-version: 0.2.0
+version: 0.2.1
 author: Carl / LearnPrompt
 license: MIT
 metadata:
@@ -63,8 +63,12 @@ metadata:
 | 当前对话/用户 brief | 用户本轮输入 | 无本地笔记时的轻量上下文 |
 | 书架 | WeRead `/shelf/sync` | 找已有书和最近活跃书 |
 | 笔记概览 | WeRead `/user/notebooks` | 判断真读过什么 |
+| 个人想法 | WeRead `/review/list/mine` | 查看自己对某本书的评论/想法 |
+| 公开点评 | WeRead `/review/list`、`/review/single` | 补充公共讨论和单条想法详情 |
+| 热门划线 | WeRead `/book/bestbookmarks`、`/book/underlines`、`/book/readreviews` | 判断章节中大家反复标记的问题 |
 | 章节目录 | WeRead `/book/chapterinfo` | 定位章节 |
 | 阅读进度 | WeRead `/book/getprogress` | 避免推荐不合适章节 |
+| 推荐书籍 | WeRead `/book/recommend`、`/book/similar` | 个性化推荐和相似书补充 |
 
 ## 安装/依赖原则
 
@@ -77,6 +81,7 @@ metadata:
 - 首次上下文配置通过 `scripts/setup.py --mode ...` 写入 `~/.config/carl-weread/config.toml`。
 - 首次 API Key 配置优先通过 `scripts/setup_api_key.py` 写入 `~/.config/carl-weread/api_key`；也支持临时环境变量 `WEREAD_API_KEY`。
 - 微信读书 API 通过 `scripts/weread.sh` 调用。
+- `scripts/weread.sh` 覆盖书架、搜索、统计、书籍详情、章节目录、阅读进度、笔记/划线、公开点评、个人想法、热门划线、个性化推荐和相似书推荐。
 - 上下文通过 `scripts/collect_context.py --config ...`、`carl_weread.context.collect_context_for_config` 或 `carl_weread.context.collect_recent_context` 收集。
 - 今日推荐优先用 `scripts/today_live.py --brief ...` 一键执行真实 WeRead 拉取和推荐。
 - 候选章节可以用 `scripts/fetch_candidates.py --output ...` 从真实 WeRead API 拉取，或用 `scripts/build_candidates.py` 从已保存 JSON 离线生成。
@@ -93,6 +98,9 @@ metadata:
 3. **读完只总结不行动。** 修正：每次 digest 必须生成一个可执行动作。
 4. **用泛泛的 AI 话术解释推荐。** 修正：必须引用用户最近上下文中的真实任务或问题。
 5. **输出裸 bookId。** 修正：尽量隐藏在 `weread://` 深度链接里。
+6. **假设 `weread://` 一定能点开。** 修正：输出 `open 'weread://...'` 命令，同时给书名和章节名兜底；提醒用户安装并登录微信读书客户端。
+7. **统计和相似推荐漏传默认参数。** 修正：`readdata` 默认 `--mode=overall`，`recommend`/`similar` 默认 `--count=12 --maxIdx=0`。
+8. **接口频率超限。** 修正：不要连续重复拉取；优先复用已保存的候选章节 JSON 或缓存。
 
 ## Verification Checklist
 

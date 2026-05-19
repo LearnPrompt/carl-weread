@@ -15,12 +15,18 @@ Subcommands:
   shelf
   notebooks [--count=INT] [--lastSort=INT]
   bookmarks --bookId=STR
+  mine-reviews --bookid=STR [--count=INT] [--synckey=INT]
+  reviews --bookId=STR [--reviewListType=INT] [--count=INT]
+  review --reviewId=STR
+  best-bookmarks --bookId=STR [--chapterUid=INT]
+  underlines --bookId=STR --chapterUid=INT
+  readreviews --bookId=STR --chapterUid=INT --reviews=JSON
   chapters --bookId=STR
   progress --bookId=STR
-  readdata [--mode=overall]
+  readdata [--mode=overall] [--baseTime=INT]
   book-info --bookId=STR
-  recommend
-  similar --bookId=STR
+  recommend [--count=INT] [--maxIdx=INT]
+  similar --bookId=STR [--count=INT] [--maxIdx=INT]
   list-apis
 
 Auth:
@@ -35,6 +41,12 @@ api_path() {
     shelf) echo "/shelf/sync" ;;
     notebooks) echo "/user/notebooks" ;;
     bookmarks) echo "/book/bookmarklist" ;;
+    mine-reviews) echo "/review/list/mine" ;;
+    reviews) echo "/review/list" ;;
+    review) echo "/review/single" ;;
+    best-bookmarks) echo "/book/bestbookmarks" ;;
+    underlines) echo "/book/underlines" ;;
+    readreviews) echo "/book/readreviews" ;;
     chapters) echo "/book/chapterinfo" ;;
     progress) echo "/book/getprogress" ;;
     readdata) echo "/readdata/detail" ;;
@@ -54,14 +66,22 @@ build_params_json() {
   python3 - "$@" <<'PY'
 import json, sys
 params = {}
+STRING_KEYS = {"bookId", "bookid", "reviewId", "sessionId"}
 for arg in sys.argv[1:]:
     if not arg.startswith('--') or '=' not in arg:
         raise SystemExit(f"参数格式错误：{arg}，应为 --key=value")
     key, value = arg[2:].split('=', 1)
     if key in {"api_name", "skill_version"}:
         raise SystemExit(f"参数名不可使用：{key}")
-    if value.isdigit():
+    if key in STRING_KEYS:
+        params[key] = value
+    elif value.isdigit():
         params[key] = int(value)
+    elif value.startswith(("{", "[")):
+        try:
+            params[key] = json.loads(value)
+        except json.JSONDecodeError as exc:
+            raise SystemExit(f"JSON 参数格式错误：{key}={value} ({exc})")
     else:
         params[key] = value
 print(json.dumps(params, ensure_ascii=False))
@@ -76,6 +96,35 @@ fi
 subcmd="$1"
 shift
 path="$(api_path "$subcmd")" || { echo "未知子命令：$subcmd" >&2; usage >&2; exit 2; }
+
+case "$subcmd" in
+  readdata)
+    if [[ " $* " != *" --mode="* ]]; then
+      set -- --mode=overall "$@"
+    fi
+    ;;
+  recommend)
+    if [[ " $* " != *" --count="* ]]; then
+      set -- --count=12 "$@"
+    fi
+    if [[ " $* " != *" --maxIdx="* ]]; then
+      set -- --maxIdx=0 "$@"
+    fi
+    ;;
+  similar)
+    if [[ " $* " != *" --count="* ]]; then
+      set -- --count=12 "$@"
+    fi
+    if [[ " $* " != *" --maxIdx="* ]]; then
+      set -- --maxIdx=0 "$@"
+    fi
+    ;;
+  best-bookmarks)
+    if [[ " $* " != *" --chapterUid="* ]]; then
+      set -- --chapterUid=0 "$@"
+    fi
+    ;;
+esac
 
 if [[ -z "${WEREAD_API_KEY:-}" && -r "$API_KEY_FILE" ]]; then
   IFS= read -r WEREAD_API_KEY < "$API_KEY_FILE"

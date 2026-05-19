@@ -96,6 +96,137 @@ def test_weread_script_flattens_business_params():
     assert "params" not in requests[0]
 
 
+def test_weread_script_readdata_defaults_to_overall():
+    requests = []
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_POST(self):
+            length = int(self.headers["Content-Length"])
+            requests.append(json.loads(self.rfile.read(length)))
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b'{"ok":true}')
+
+        def log_message(self, format, *args):
+            return
+
+    server = HTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        env = os.environ.copy()
+        env["WEREAD_API_KEY"] = "wrk-test"
+        env["WEREAD_GATEWAY"] = f"http://127.0.0.1:{server.server_port}"
+        result = subprocess.run(
+            [str(ROOT / "scripts" / "weread.sh"), "readdata"],
+            cwd=ROOT,
+            env=env,
+            text=True,
+            capture_output=True,
+        )
+    finally:
+        server.shutdown()
+
+    assert result.returncode == 0
+    assert requests == [{"api_name": "/readdata/detail", "skill_version": "1.0.3", "mode": "overall"}]
+
+
+def test_weread_script_similar_adds_pagination_defaults():
+    requests = []
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_POST(self):
+            length = int(self.headers["Content-Length"])
+            requests.append(json.loads(self.rfile.read(length)))
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b'{"ok":true}')
+
+        def log_message(self, format, *args):
+            return
+
+    server = HTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        env = os.environ.copy()
+        env["WEREAD_API_KEY"] = "wrk-test"
+        env["WEREAD_GATEWAY"] = f"http://127.0.0.1:{server.server_port}"
+        result = subprocess.run(
+            [str(ROOT / "scripts" / "weread.sh"), "similar", "--bookId=40935319"],
+            cwd=ROOT,
+            env=env,
+            text=True,
+            capture_output=True,
+        )
+    finally:
+        server.shutdown()
+
+    assert result.returncode == 0
+    assert requests == [
+        {
+            "api_name": "/book/similar",
+            "skill_version": "1.0.3",
+            "count": 12,
+            "maxIdx": 0,
+            "bookId": "40935319",
+        }
+    ]
+
+
+def test_weread_script_maps_extended_api_commands():
+    requests = []
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_POST(self):
+            length = int(self.headers["Content-Length"])
+            requests.append(json.loads(self.rfile.read(length)))
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b'{"ok":true}')
+
+        def log_message(self, format, *args):
+            return
+
+    server = HTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        env = os.environ.copy()
+        env["WEREAD_API_KEY"] = "wrk-test"
+        env["WEREAD_GATEWAY"] = f"http://127.0.0.1:{server.server_port}"
+        commands = [
+            ("mine-reviews", "--bookid=40935319"),
+            ("reviews", "--bookId=40935319"),
+            ("review", "--reviewId=abc"),
+            ("best-bookmarks", "--bookId=40935319"),
+            ("underlines", "--bookId=40935319", "--chapterUid=3"),
+            ("readreviews", "--bookId=40935319", "--chapterUid=3", "--reviews=[]"),
+        ]
+        for command in commands:
+            result = subprocess.run(
+                [str(ROOT / "scripts" / "weread.sh"), *command],
+                cwd=ROOT,
+                env=env,
+                text=True,
+                capture_output=True,
+            )
+            assert result.returncode == 0
+    finally:
+        server.shutdown()
+
+    assert [request["api_name"] for request in requests] == [
+        "/review/list/mine",
+        "/review/list",
+        "/review/single",
+        "/book/bestbookmarks",
+        "/book/underlines",
+        "/book/readreviews",
+    ]
+    assert requests[3]["chapterUid"] == 0
+    assert requests[5]["reviews"] == []
+
+
 def test_weread_script_reads_api_key_file_when_env_missing(tmp_path):
     requests = []
 

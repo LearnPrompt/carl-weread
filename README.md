@@ -8,7 +8,7 @@
 
 它会读取你的微信读书书架、笔记和最近阅读，再结合你的 Obsidian 日记、项目和选题，推荐一个今天能读完的小阅读块。读完后，它把收获变成行动卡，回流到你的项目和内容创作里。
 
-## 现在的 V0.2：文章可演示完成版
+## 现在的 V0.2.1：文章可演示完成版
 
 V0.2 已经把主链路补成可演示闭环：
 
@@ -33,6 +33,7 @@ V0.2 已经把主链路补成可演示闭环：
 - `scripts/install_skill.py`：把完整仓库安装成 Hermes skill 目录，避免只安装 `SKILL.md`。
 - `SKILL.md` + `workflows/`：Agent Skill 工作流契约。
 - `tests/`：覆盖 API helper、配置、上下文、推荐、行动卡、写回、周复盘。
+- V0.2.1 补齐 WeRead 原子能力覆盖：公开点评、个人想法、热门划线、划线热度、单条想法、章节划线评论、个性化推荐和相似书推荐。
 
 
 ## 完整安装到新的 Hermes Agent
@@ -210,6 +211,58 @@ scripts/weread.sh search --keyword=AI
 scripts/weread.sh chapters --bookId=BOOK_ID
 scripts/weread.sh progress --bookId=BOOK_ID
 ```
+
+### WeRead 原子能力覆盖
+
+截图里的六类能力都可以通过 `scripts/weread.sh` 调用：
+
+| 能力 | 命令 |
+|---|---|
+| 查询书架 | `scripts/weread.sh shelf` |
+| 书籍搜索 | `scripts/weread.sh search --keyword=画家之眼` |
+| 阅读统计 | `scripts/weread.sh readdata` |
+| 书籍详情 | `scripts/weread.sh book-info --bookId=BOOK_ID` |
+| 章节目录 | `scripts/weread.sh chapters --bookId=BOOK_ID` |
+| 阅读进度 | `scripts/weread.sh progress --bookId=BOOK_ID` |
+| 笔记概览 | `scripts/weread.sh notebooks --count=20` |
+| 个人划线 | `scripts/weread.sh bookmarks --bookId=BOOK_ID` |
+| 推荐好书 | `scripts/weread.sh recommend` |
+| 相似书推荐 | `scripts/weread.sh similar --bookId=BOOK_ID` |
+
+额外暴露的原子接口：
+
+```bash
+scripts/weread.sh mine-reviews --bookid=BOOK_ID
+scripts/weread.sh reviews --bookId=BOOK_ID
+scripts/weread.sh review --reviewId=REVIEW_ID
+scripts/weread.sh best-bookmarks --bookId=BOOK_ID
+scripts/weread.sh underlines --bookId=BOOK_ID --chapterUid=CHAPTER_UID
+scripts/weread.sh readreviews --bookId=BOOK_ID --chapterUid=CHAPTER_UID --reviews='[]'
+scripts/weread.sh list-apis
+```
+
+已知兼容处理：
+
+- `readdata` 默认补 `--mode=overall`，避免服务端返回参数格式错误。
+- `recommend` 和 `similar` 默认补 `--count=12 --maxIdx=0`，避免相似书推荐在部分环境下缺分页参数失败。
+- `best-bookmarks` 默认补 `--chapterUid=0`，表示全书热门划线。
+- `readreviews --reviews=...` 支持 JSON 数组/对象参数。
+- 频率超限时不要反复重试；优先复用 `.cache/weread/` 或 `/private/tmp/` 中已保存的候选章节 JSON。
+
+### 打开微信读书
+
+推荐输出中会给 `weread://` 深度链接，但它依赖本机微信读书客户端和系统协议注册。更稳妥的输出方式：
+
+```bash
+open 'weread://reading?bId=BOOK_ID&chapterUid=CHAPTER_UID'
+```
+
+如果没有反应：
+
+1. 安装并打开微信读书客户端。
+2. 登录同一个微信读书账号。
+3. 再执行上面的 `open` 命令。
+4. 仍然打不开时，用书名和章节名在微信读书里手动搜索。
 
 
 ## 读后行动卡与写回
