@@ -1,0 +1,14 @@
+[
+  {
+    "book_id": "demo-agent-book",
+    "book_title": "AI Harness Engineering",
+    "chapter_uid": "chapter-7",
+    "title": "Agent Skill 交付验证"
+  },
+  {
+    "book_id": "demo-writing-book",
+    "book_title": "写作是门手艺",
+    "chapter_uid": "chapter-2",
+    "title": "从真实问题开始写"
+  }
+]

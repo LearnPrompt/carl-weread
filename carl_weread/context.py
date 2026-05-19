@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 from pathlib import Path
 
+from .config import ContextConfig
+
 
 @dataclass(frozen=True)
 class ContextItem:
@@ -27,6 +29,16 @@ def _first_markdown_files(root: Path, limit: int = 8) -> list[Path]:
     return sorted((p for p in root.rglob("*.md") if p.is_file()), key=lambda p: p.stat().st_mtime, reverse=True)[:limit]
 
 
+def _first_context_files(root: Path, limit: int = 8) -> list[Path]:
+    if not root.exists():
+        return []
+    patterns = ("*.md", "*.txt")
+    candidates: list[Path] = []
+    for pattern in patterns:
+        candidates.extend(p for p in root.rglob(pattern) if p.is_file())
+    return sorted(candidates, key=lambda p: p.stat().st_mtime, reverse=True)[:limit]
+
+
 def collect_recent_context(
     vault_path: str | Path,
     today: date | None = None,
@@ -37,6 +49,14 @@ def collect_recent_context(
     vault = Path(vault_path).expanduser()
     today = today or date.today()
     items: list[ContextItem] = []
+
+    structured_dirs = [vault / "10_日记", vault / "20_项目", vault / "15_自媒体" / "选题库"]
+    has_obsidian_structure = any(path.exists() for path in structured_dirs)
+
+    if not has_obsidian_structure:
+        for path in _first_context_files(vault, limit=8):
+            items.append(ContextItem("context", str(path.relative_to(vault)), _read_snippet(path, max_chars_per_file)))
+        return [item for item in items if item.text]
 
     for path in _recent_daily_paths(vault, today, days):
         if path.exists():
@@ -49,3 +69,20 @@ def collect_recent_context(
         items.append(ContextItem("topic", str(path.relative_to(vault)), _read_snippet(path, max_chars_per_file)))
 
     return [item for item in items if item.text]
+
+
+def collect_context_for_config(
+    config: ContextConfig,
+    brief: str | None = None,
+    today: date | None = None,
+    days: int = 3,
+    max_chars_per_file: int = 1200,
+) -> list[ContextItem]:
+    """Collect context using the configured mode."""
+    config.validate()
+    if config.mode in {"obsidian", "folder"}:
+        return collect_recent_context(config.path, today=today, days=days, max_chars_per_file=max_chars_per_file)
+    if config.mode == "chat":
+        text = (brief or "").strip()
+        return [ContextItem("brief", "current-input", text)] if text else []
+    return []

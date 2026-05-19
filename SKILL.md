@@ -59,15 +59,28 @@ metadata:
 | 最近日记 | Obsidian `10_日记/` | 判断当下关注点 |
 | 活跃项目 | Obsidian `20_项目/` | 判断真实任务压力 |
 | 选题库 | Obsidian `15_自媒体/选题库/` | 判断内容生产方向 |
+| 普通本地笔记 | 任意 Markdown/TXT 文件夹 | 无 Obsidian 用户的上下文降级 |
+| 当前对话/用户 brief | 用户本轮输入 | 无本地笔记时的轻量上下文 |
 | 书架 | WeRead `/shelf/sync` | 找已有书和最近活跃书 |
 | 笔记概览 | WeRead `/user/notebooks` | 判断真读过什么 |
 | 章节目录 | WeRead `/book/chapterinfo` | 定位章节 |
 | 阅读进度 | WeRead `/book/getprogress` | 避免推荐不合适章节 |
 
+## 安装/依赖原则
+
+- 不强制先安装官方 WeRead Skill；本 skill 自带 `scripts/weread.sh` 作为 API helper。
+- 必须配置 `WEREAD_API_KEY`，Key 从官方微信读书 Skill/API 入口获取。
+- Obsidian 不是硬依赖；有 Obsidian 时走 Full Mode，没有 Obsidian 时按「普通文件夹 → 当前对话 brief → WeRead-only」逐级降级。
+
 ## 调用约定
 
+- 首次配置通过 `scripts/setup.py --mode ...` 写入 `~/.config/carl-weread/config.toml`。
+- `WEREAD_API_KEY` 只从环境变量读取，不写入配置文件。
 - 微信读书 API 通过 `scripts/weread.sh` 调用。
-- Obsidian 上下文通过 `scripts/collect_context.py` 或 `carl_weread.context` 收集。
+- 上下文通过 `scripts/collect_context.py --config ...`、`carl_weread.context.collect_context_for_config` 或 `carl_weread.context.collect_recent_context` 收集。
+- 今日推荐优先用 `scripts/today_live.py --brief ...` 一键执行真实 WeRead 拉取和推荐。
+- 候选章节可以用 `scripts/fetch_candidates.py --output ...` 从真实 WeRead API 拉取，或用 `scripts/build_candidates.py` 从已保存 JSON 离线生成。
+- 调试时也可以用 `scripts/today.py --config ... --chapters ...` 串联本地候选章节验证。
 - 章节选择逻辑通过 `carl_weread.today_chapter` 执行。
 - 输出格式遵守 `shared/output-style.md`。
 

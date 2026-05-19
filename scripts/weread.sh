@@ -85,7 +85,7 @@ import json, os, sys, urllib.request
 gateway, path, skill_version, params_raw = sys.argv[1:]
 api_key = os.environ["WEREAD_API_KEY"]
 payload = {
-    "api": path,
+    "api_name": path,
     "skill_version": skill_version,
     "params": json.loads(params_raw),
 }
@@ -95,6 +95,7 @@ req = urllib.request.Request(
     headers={
         "Content-Type": "application/json",
         "Authorization": f"Bearer {api_key}",
+        "User-Agent": "carl-weread/1.0",
     },
     method="POST",
 )

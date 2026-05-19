@@ -16,10 +16,14 @@
 ## 标准流程
 
 1. 收集最近上下文
-   - Obsidian 最近 3 天日记
-   - 活跃项目文件
-   - 最近选题库文件
-2. 收集微信读书数据
+   - 优先：Obsidian 最近 3 天日记、活跃项目文件、最近选题库文件
+   - 其次：用户指定的任意 Markdown/TXT 文件夹
+   - 再次：用户本轮输入的目标/困惑/项目 brief
+   - 最后：没有外部上下文时，仅使用微信读书最近阅读和笔记
+2. 收集微信读书数据并生成候选章节
+   - 日常使用优先用 `scripts/today_live.py --brief ...` 一键完成真实 WeRead 拉取和推荐
+   - 调试候选池时用 `scripts/fetch_candidates.py --output ...` 自动调用 WeRead API
+   - 离线/调试时用 `scripts/build_candidates.py` 从已保存 JSON 生成
    - `/shelf/sync` 看最近活跃和已有书
    - `/user/notebooks` 看真读过什么
    - 对候选书调 `/book/chapterinfo`
@@ -50,7 +54,7 @@
 
 ## 降级策略
 
-- 没有 Obsidian 上下文：只用微信读书最近阅读，明确说明口径。
+- 没有 Obsidian 上下文：先读用户指定的普通 Markdown/TXT 文件夹；还没有就使用本轮对话 brief；再没有才只用微信读书最近阅读，并明确说明口径。
 - 没有章节目录：退化为推荐一本书中的最近阅读位置。
 - 没有 API Key：提示用户设置 `WEREAD_API_KEY`，不编造结果。
 - 候选章节都不明显相关：宁可说明「今天不建议读新书」，改推荐整理已有笔记。
