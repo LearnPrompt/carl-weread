@@ -23,7 +23,11 @@ def _run_weread(weread_script: Path, args: list[str]) -> object:
     command = [str(weread_script), *args]
     if weread_script.suffix == ".py":
         command = [sys.executable, str(weread_script), *args]
-    result = subprocess.run(command, text=True, capture_output=True)
+    try:
+        result = subprocess.run(command, text=True, capture_output=True, timeout=90)
+    except subprocess.TimeoutExpired:
+        print(f"WeRead命令超时：{' '.join(command[:2])} ...", file=sys.stderr)
+        raise SystemExit(4)
     if result.returncode != 0:
         sys.stderr.write(result.stderr)
         raise SystemExit(result.returncode)

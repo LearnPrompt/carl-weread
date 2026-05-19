@@ -75,7 +75,7 @@ carl-weread更像「今天这个问题，只读哪一节，然后怎么用」。
 | 微信读书官方能力（App统计 / WeRead Skill） | 阅读数据与原子接口 | 书架、搜索、笔记、统计、推荐接口完整 | 不停在查数据，往「当前问题→章节→行动」走 |
 | huashu-weread | 读书顾问 | 书架+笔记交叉，推荐下一本书，规划主题路径 | 参考它的交叉分析思路，但把目标缩到「今天只读哪一节」 |
 | jerlin-weread | CLI工程底座 | API文档、脚本、字段约束更稳 | 学它的命令化组织方式，再把命令接成阅读工作流 |
-| yao-weread-skill | 阅读报告 | 年度/周期阅读可视化，适合展示 | 不追求报告漂亮，优先看阅读有没有进入工作 |
+
 
 ---
 
@@ -90,9 +90,9 @@ carl-weread更像「今天这个问题，只读哪一节，然后怎么用」。
 | 写回Obsidian/本地文件夹 | ✅ 已完成 | 把阅读行动卡写回`carl-weread/reading-cards/` | `--writeback` |
 | 周阅读行动复盘 | ✅ 已完成 | 从行动卡看哪些阅读真的进入了文章、项目和判断 | 自然语言触发 / `scripts/weekly_loop.py` |
 | WeRead原子API helper | ✅ 已完成 | 书架、搜索、统计、详情、目录、进度、笔记、划线、点评、推荐 | `scripts/weread.sh ...` |
-| 未读书交叉验证推荐 | 🚧 下一版重点 | 过滤已深读/只收藏/已消化，推荐真正没读过但现在该读的书 | V0.3计划 |
-| 苏格拉底式无划线协议 | 🚧 下一版重点 | 读完后先查有没有划线；没有划线就用问题追回理解 | V0.3计划 |
-| 统一产品级CLI | 🚧 下一版重点 | 从一堆`scripts/`升级成`carl-weread recommend/after-read/weekly` | V0.3计划 |
+| 未读书交叉验证推荐 | ✅ V0.3已完成 | 过滤已深读/只收藏/已消化，推荐真正没读过但现在该读的书 | `scripts/carl_weread.py recommend` |
+| 苏格拉底式无划线协议 | ✅ V0.3已完成 | 读完后先查有没有划线；没有划线就用问题追回理解 | `scripts/carl_weread.py after-read` |
+| 统一产品级CLI | ✅ V0.3已完成 | 从一堆`scripts/`收束到`recommend/today/after-read/weekly` | `scripts/carl_weread.py ...` |
 
 ---
 
@@ -121,7 +121,7 @@ carl-weread更像「今天这个问题，只读哪一节，然后怎么用」。
 | 阅读进度 | `/book/getprogress` | 是否正在读、读到哪里 | 避免推荐明显不合适的位置 |
 | 个人划线 | `/book/bookmarklist` | 用户真正停下来的地方 | 读后行动卡的证据 |
 | 热门划线/点评 | `/book/bestbookmarks`、`/review/list` | 大家反复标记的问题 | 辅助判断章节价值 |
-| 推荐/相似书 | `/book/recommend`、`/book/similar` | 新候选来源 | V0.3做未读书推荐交叉验证 |
+| 推荐/相似书 | `/book/recommend`、`/book/similar` | 新候选来源 | 找没读透但现在该读的书 |
 
 ### 3. 阅读统计不比时长，比影响
 
@@ -150,13 +150,13 @@ carl-weread更像「今天这个问题，只读哪一节，然后怎么用」。
 |---|---|---|
 | 今天读哪一小节 | today-chapter | 一本书里的一个章节/小节，附读前问题和行动 |
 | 根据我的书架和最近问题，推荐一本现在最该读的书，只告诉我今天读哪一节 | today-chapter | 书名、章节、推荐理由、打开链接 |
-| 我信息焦虑，帮我少读一点但读准一点 | today-chapter / V0.3 socratic-read | 先收束问题，再推荐小阅读块 |
+| 我信息焦虑，帮我少读一点但读准一点 | today-chapter / after-read | 先收束问题，再推荐小阅读块 |
 | 这本书我读到哪了 | 原子能力：progress | 阅读进度和打开链接 |
 | 查一下这本书的目录和我的划线 | 原子能力：book-info/bookmarks/chapters | 书籍详情、章节目录、个人划线 |
 | 读完了，帮我消化成行动 | digest-apply | 阅读行动卡、一个最小行动、选题线索 |
 | 把这次阅读闭环存到Obsidian | writeback | 写入`carl-weread/reading-cards/` |
 | 本周阅读行动复盘 | weekly-loop | 本周真正进入工作的阅读、逃避式收藏、下周主线 |
-| 给我推荐一本我没读过但现在该读的书 | V0.3 unread-advisor | 交叉验证已读/未读后推荐一本新书 |
+| 给我推荐一本我没读过但现在该读的书 | unread-advisor | 交叉验证已读/未读后推荐一本新书 |
 
 ---
 
@@ -171,8 +171,6 @@ hermes skills install https://raw.githubusercontent.com/LearnPrompt/carl-weread/
 ```
 
 这一步只会安装`SKILL.md`。它适合加载使用说明，但不会带上`scripts/`、`carl_weread/`、`workflows/`和测试文件。
-
-为什么不像有些Skill一样一行安装就能跑？原因很简单：`carl-weread`现在带了Python模块、Shell脚本、测试和本地写回逻辑。Hermes安装raw `SKILL.md`时，只会读取那个文件，不会自动把整个GitHub仓库复制下来。
 
 ### 完整安装：真正运行这套工具
 
@@ -281,6 +279,36 @@ scripts/today_live.py \
 
 ---
 
+## V0.3：推荐一本没读透但现在该读的书
+
+这条能力不是再给一串书单。它会先看书架和笔记，排除已经明显消化过的书，再把微信读书推荐、相似书和当前问题放在一起交叉验证。
+
+自然语言版：
+
+```text
+给我推荐一本我没读过但现在该读的书。
+我的问题是：我在写Agent Skill文章，需要找一个能解释「为什么Skill不能只封装API」的阅读切口。
+```
+
+代码版：
+
+```bash
+scripts/carl_weread.py recommend \
+  --brief "我在写Agent Skill文章，需要找一个能解释为什么Skill不能只封装API的阅读切口。"
+```
+
+输出会包含：
+
+```text
+推荐哪本书
+为什么不是继续读老书
+书架/笔记/推荐来源的证据
+翻开后先问什么
+读完只做哪个动作
+```
+
+---
+
 ## 读后行动卡与写回
 
 行动卡要贴着书走。它必须带着书名、章节、划线/想法和当前问题一起生成，否则就会变成空泛总结。
@@ -297,13 +325,27 @@ scripts/today_live.py \
 代码版：
 
 ```bash
-scripts/digest_apply.py \
+scripts/carl_weread.py after-read \
   --book-title "AI Engineering" \
   --chapter-title "Evals and workflows" \
   --highlight "Agent的价值在模型、工具、上下文和验证之间。" \
   --current-problem "我在写一篇介绍carl-weread的文章，需要把阅读变成可演示动作。" \
   --writeback
 ```
+
+如果你已经知道`bookId`和`chapterUid`，也可以让它先自动拉本章划线：
+
+```bash
+scripts/carl_weread.py after-read \
+  --book-id BOOK_ID \
+  --chapter-uid CHAPTER_UID \
+  --book-title "AI Engineering" \
+  --chapter-title "Evals and workflows" \
+  --current-problem "我在写一篇介绍carl-weread的文章，需要把阅读变成可演示动作。" \
+  --auto-fetch
+```
+
+如果这一章没有划线，它不会硬写总结，而是输出「无划线读后检查」：让你补一条原文/转述，说明它解释了哪个问题，再决定要不要生成行动卡。
 
 写回路径形如：
 
@@ -327,7 +369,7 @@ scripts/digest_apply.py \
 代码版：
 
 ```bash
-scripts/weekly_loop.py \
+scripts/carl_weread.py weekly \
   --cards /path/to/reading-cards \
   --context "本周在写Agent Skill文章，也在验证carl-weread的安装链路"
 ```
@@ -361,8 +403,6 @@ open 'weread://reading?bId=BOOK_ID&chapterUid=CHAPTER_UID'
 
 ## 仓库结构
 
-这段给人和Agent快速定位文件，不写也不会影响`SKILL.md`被读取；但完整clone仓库时，它能让Agent更快找到脚本、工作流和测试位置。
-
 ```text
 carl-weread/
 ├── SKILL.md          # Agent读取的技能说明
@@ -378,10 +418,9 @@ carl-weread/
 
 ## 当前边界
 
-- V0.2.1已经跑通真实WeRead API、今日推荐、读后行动卡、文件写回、周复盘和测试。
-- 目前推荐章节仍以轻量打分为主，还没有完成「未读书交叉验证推荐」。
-- 目前读后行动卡支持用户手动输入划线，还没有完成「自动检查该章是否有划线→无划线追问」协议。
-- 目前CLI仍以`scripts/`为主，还没有统一成`carl-weread recommend/after-read/weekly`这种产品级命令。
+- V0.3已经跑通真实WeRead API helper、今日章节、未读书推荐、读后划线检查、无划线追问、行动卡写回、周复盘和统一CLI。
+- 推荐章节仍使用轻量规则，不做embedding或全文语义检索；它适合演示和日常使用，不伪装成完整阅读智能体。
+- 未读书推荐会根据书架、笔记和推荐/相似书数据做交叉判断，但微信读书接口字段在不同账号上可能有差异，异常时应保留原始JSON样本再补适配。
 - 写回会写入真实Obsidian vault或普通文件夹；Chat/WeRead-only模式默认只在对话中返回，不写文件。
 
 ---
@@ -438,12 +477,12 @@ scripts/today.py \
 - 微信读书官方API提供底层能力：<https://weread.qq.com/r/weread-skills>
 - huashu-weread提供了「书架+笔记交叉分析」这个关键启发：<https://github.com/alchaincyf/huashu-weread>
 - jerlin-weread启发了CLI化、字段契约和Agent可稳定调用的工程底座：<https://github.com/jerlinn/jerlin-weread>
-- yao-weread-skill启发了阅读报告和展示型输出。
+
 
 ---
 
 <div align="center">
 
-Made by [LearnPrompt](https://github.com/LearnPrompt) · 为了少读一点，但读准一点
+Made by [LearnPrompt](https://github.com/LearnPrompt) · 少读一点，读准一点
 
 </div>

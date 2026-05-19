@@ -1,7 +1,7 @@
 ---
 name: carl-weread
 description: 微信读书行动型阅读教练。根据用户最近的 Obsidian 日记、项目、选题和微信读书书架/笔记，推荐今天最该读的一小节，并把读后收获转成行动卡、原子笔记和内容选题线索。当用户说「今天读什么」「推荐一章」「读完了帮我消化」「把阅读变成行动」「本周阅读闭环」时触发。
-version: 0.2.1
+version: 0.3.0
 author: Carl / LearnPrompt
 license: MIT
 metadata:
@@ -23,6 +23,7 @@ metadata:
 用户出现以下意图时使用：
 
 - 今天读什么 / 推荐一章 / 推荐一小节
+- 推荐一本我没读过但现在该读的书
 - 根据我最近在做的事找一本书里的章节
 - 读完了，帮我消化
 - 把这次阅读变成行动卡 / Obsidian 笔记 / 选题线索
@@ -38,19 +39,22 @@ metadata:
 
 | 用户意图 | 工作流 |
 |---|---|
-| 今天读什么 / 推荐一章 | `workflows/today-chapter.md` |
-| 读完了 / 帮我消化 | `workflows/digest-apply.md` |
-| 本周阅读复盘 | `workflows/weekly-loop.md` |
+| 今天读什么 / 推荐一章 | `scripts/carl_weread.py today` / `workflows/today-chapter.md` |
+| 推荐一本没读透但现在该读的书 | `scripts/carl_weread.py recommend` |
+| 读完了 / 帮我消化 | `scripts/carl_weread.py after-read` / `workflows/digest-apply.md` |
+| 本周阅读复盘 | `scripts/carl_weread.py weekly` / `workflows/weekly-loop.md` |
 
 ## 强制规则
 
 1. 不允许只推荐书名；必须尽量定位到章节或小节。
 2. 推荐理由必须连接用户最近真实上下文，不能只说「这本书很好」。
 3. 输出必须包含一个读前问题和一个读后行动。
-4. 能生成 `weread://` 链接时必须生成。
-5. 如果上下文不足，先退化为「基于微信读书最近阅读推荐」，并明确说明口径。
-6. 不导出书籍全文；只使用微信读书 API 可访问的元数据、用户自己的笔记/划线、公开热度信息。
-7. 不打印 `WEREAD_API_KEY`；如需持久化，只能写入 `~/.config/carl-weread/api_key` 这种权限为 `600` 的私有 key 文件，不能写入 `config.toml`、README、日志或普通 shell 配置。
+4. 用户要「推荐一本没读过但现在该读的书」时，必须交叉检查书架、笔记和推荐/相似书候选，不能只返回微信读书推荐列表。
+5. 读后消化必须先看有没有划线/转述；没有划线时走无划线追问协议，不要硬写行动卡。
+6. 能生成 `weread://` 链接时必须生成。
+7. 如果上下文不足，先退化为「基于微信读书最近阅读推荐」，并明确说明口径。
+8. 不导出书籍全文；只使用微信读书 API 可访问的元数据、用户自己的笔记/划线、公开热度信息。
+9. 不打印 `WEREAD_API_KEY`；如需持久化，只能写入 `~/.config/carl-weread/api_key` 这种权限为 `600` 的私有 key 文件，不能写入 `config.toml`、README、日志或普通 shell 配置。
 
 ## 数据源
 
@@ -83,11 +87,13 @@ metadata:
 - 微信读书 API 通过 `scripts/weread.sh` 调用。
 - `scripts/weread.sh` 覆盖书架、搜索、统计、书籍详情、章节目录、阅读进度、笔记/划线、公开点评、个人想法、热门划线、个性化推荐和相似书推荐。
 - 上下文通过 `scripts/collect_context.py --config ...`、`carl_weread.context.collect_context_for_config` 或 `carl_weread.context.collect_recent_context` 收集。
-- 今日推荐优先用 `scripts/today_live.py --brief ...` 一键执行真实 WeRead 拉取和推荐。
+- V0.3统一入口优先用 `scripts/carl_weread.py recommend|today|after-read|weekly`。
+- 今日推荐可用 `scripts/carl_weread.py today --brief ...` 或 `scripts/today_live.py --brief ...` 一键执行真实 WeRead 拉取和推荐。
 - 候选章节可以用 `scripts/fetch_candidates.py --output ...` 从真实 WeRead API 拉取，或用 `scripts/build_candidates.py` 从已保存 JSON 离线生成。
 - 调试时也可以用 `scripts/today.py --config ... --chapters ...` 串联本地候选章节验证。
-- 读后消化用 `scripts/digest_apply.py`，可打印行动卡、写到指定 `--output`，或 `--writeback` 写回配置目标。
-- 周复盘用 `scripts/weekly_loop.py --cards ... --context ...`。
+- 未读书推荐用 `scripts/carl_weread.py recommend --brief ...`。
+- 读后消化用 `scripts/carl_weread.py after-read`；也保留 `scripts/digest_apply.py` 作为底层行动卡入口。
+- 周复盘用 `scripts/carl_weread.py weekly --cards ... --context ...`；也保留 `scripts/weekly_loop.py`。
 - 章节选择逻辑通过 `carl_weread.today_chapter` 执行。
 - 输出格式遵守 `shared/output-style.md`。
 
@@ -105,7 +111,9 @@ metadata:
 ## Verification Checklist
 
 - [ ] `scripts/weread.sh --help` 可运行。
+- [ ] `scripts/carl_weread.py recommend --brief ...` 可推荐一本没读透但现在该读的书。
 - [ ] `scripts/today_live.py --brief ...` 可生成今日一小节。
+- [ ] `scripts/carl_weread.py after-read ... --auto-fetch` 可检查划线；无划线时输出追问协议。
 - [ ] `scripts/digest_apply.py ... --writeback` 可生成/写回阅读行动卡。
 - [ ] `scripts/weekly_loop.py --cards ...` 可生成周复盘。
 - [ ] `python -m pytest tests -q` 通过。

@@ -15,7 +15,7 @@ def test_write_and_load_folder_config_without_storing_api_key(tmp_path, monkeypa
     notes = tmp_path / "notes"
     notes.mkdir()
     config_path = tmp_path / "carl-weread.toml"
-    monkeypatch.setenv("WEREAD_API_KEY", "wrk-secret-should-not-be-written")
+    monkeypatch.setenv("WEREAD_API_KEY", "wrk-secret-x")
 
     write_config(ContextConfig(mode="folder", path=notes), config_path)
 
