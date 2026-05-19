@@ -44,7 +44,7 @@ def main() -> int:
     target = args.target.expanduser()
     copy_tree(source, target)
     print(f"已安装完整 skill 目录：{target}")
-    print("下一步：在目标 Hermes 环境配置 WEREAD_API_KEY，然后运行 scripts/today_live.py。")
+    print("下一步：在目标 Hermes 环境运行 scripts/setup_api_key.py，然后运行 scripts/today_live.py。")
     return 0
 
 

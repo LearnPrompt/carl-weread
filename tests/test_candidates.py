@@ -42,6 +42,7 @@ def test_chapters_from_chapterinfo_normalizes_common_chapter_fields():
                 {"chapterUid": "cover", "title": "封面", "wordCount": 1},
                 {"chapterUid": "copyright", "title": "版权信息", "wordCount": 12},
                 {"chapterUid": "intro", "title": "内容简介", "wordCount": 200},
+                {"chapterUid": "title", "title": "书名页", "wordCount": 120},
                 {"chapterUid": "", "title": "缺失 uid 的章节"},
             ]
         }

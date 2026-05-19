@@ -50,7 +50,7 @@ metadata:
 4. 能生成 `weread://` 链接时必须生成。
 5. 如果上下文不足，先退化为「基于微信读书最近阅读推荐」，并明确说明口径。
 6. 不导出书籍全文；只使用微信读书 API 可访问的元数据、用户自己的笔记/划线、公开热度信息。
-7. 不打印、不保存 `WEREAD_API_KEY`。
+7. 不打印 `WEREAD_API_KEY`；如需持久化，只能写入 `~/.config/carl-weread/api_key` 这种权限为 `600` 的私有 key 文件，不能写入 `config.toml`、README、日志或普通 shell 配置。
 
 ## 数据源
 
@@ -69,13 +69,13 @@ metadata:
 ## 安装/依赖原则
 
 - 不强制先安装官方 WeRead Skill；本 skill 自带 `scripts/weread.sh` 作为 API helper。
-- 必须配置 `WEREAD_API_KEY`，Key 从官方微信读书 Skill/API 入口获取。
+- 必须配置 `WEREAD_API_KEY` 或私有 key 文件，Key 从官方微信读书 Skill/API 入口获取。
 - Obsidian 不是硬依赖；有 Obsidian 时走 Full Mode，没有 Obsidian 时按「普通文件夹 → 当前对话 brief → WeRead-only」逐级降级。
 
 ## 调用约定
 
-- 首次配置通过 `scripts/setup.py --mode ...` 写入 `~/.config/carl-weread/config.toml`。
-- `WEREAD_API_KEY` 只从环境变量读取，不写入配置文件。
+- 首次上下文配置通过 `scripts/setup.py --mode ...` 写入 `~/.config/carl-weread/config.toml`。
+- 首次 API Key 配置优先通过 `scripts/setup_api_key.py` 写入 `~/.config/carl-weread/api_key`；也支持临时环境变量 `WEREAD_API_KEY`。
 - 微信读书 API 通过 `scripts/weread.sh` 调用。
 - 上下文通过 `scripts/collect_context.py --config ...`、`carl_weread.context.collect_context_for_config` 或 `carl_weread.context.collect_recent_context` 收集。
 - 今日推荐优先用 `scripts/today_live.py --brief ...` 一键执行真实 WeRead 拉取和推荐。

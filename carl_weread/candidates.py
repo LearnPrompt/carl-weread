@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from typing import Any
 
-from .today_chapter import Chapter
+from .today_chapter import Chapter, is_substantive_chapter_title
 
 
 @dataclass(frozen=True)
@@ -59,9 +59,7 @@ def extract_book_refs(payload: Any, limit: int | None = None) -> list[BookRef]:
 
 def _is_readable_chapter(title: str, item: dict[str, Any]) -> bool:
     normalized = title.strip()
-    if not normalized:
-        return False
-    if normalized in {"封面", "版权信息", "目录", "扉页", "献词", "插图", "内容简介", "作者简介", "前言", "序", "推荐序", "作者序", "再版序"}:
+    if not is_substantive_chapter_title(normalized):
         return False
     word_count = item.get("wordCount") or item.get("word_count")
     if isinstance(word_count, int) and word_count <= 20:

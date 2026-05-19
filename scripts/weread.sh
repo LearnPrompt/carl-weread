@@ -2,8 +2,9 @@
 # carl-weread API helper. Keep this layer boring: one subcommand maps to one WeRead API.
 set -euo pipefail
 
-GATEWAY="https://i.weread.qq.com/api/agent/gateway"
+GATEWAY="${WEREAD_GATEWAY:-https://i.weread.qq.com/api/agent/gateway}"
 SKILL_VERSION="${WEREAD_SKILL_VERSION:-1.0.3}"
+API_KEY_FILE="${WEREAD_API_KEY_FILE:-$HOME/.config/carl-weread/api_key}"
 
 usage() {
   cat <<'EOF'
@@ -22,7 +23,9 @@ Subcommands:
   similar --bookId=STR
   list-apis
 
-Auth: export WEREAD_API_KEY=wrk-...
+Auth:
+  scripts/setup_api_key.py
+  or export WEREAD_API_KEY=<your-api-key>
 EOF
 }
 
@@ -55,6 +58,8 @@ for arg in sys.argv[1:]:
     if not arg.startswith('--') or '=' not in arg:
         raise SystemExit(f"参数格式错误：{arg}，应为 --key=value")
     key, value = arg[2:].split('=', 1)
+    if key in {"api_name", "skill_version"}:
+        raise SystemExit(f"参数名不可使用：{key}")
     if value.isdigit():
         params[key] = int(value)
     else:
@@ -72,8 +77,13 @@ subcmd="$1"
 shift
 path="$(api_path "$subcmd")" || { echo "未知子命令：$subcmd" >&2; usage >&2; exit 2; }
 
+if [[ -z "${WEREAD_API_KEY:-}" && -r "$API_KEY_FILE" ]]; then
+  IFS= read -r WEREAD_API_KEY < "$API_KEY_FILE"
+  export WEREAD_API_KEY
+fi
+
 if [[ -z "${WEREAD_API_KEY:-}" ]]; then
-  echo "缺少 WEREAD_API_KEY。请先 export WEREAD_API_KEY=wrk-..." >&2
+  echo "缺少 WEREAD_API_KEY。请运行 scripts/setup_api_key.py，或临时 export WEREAD_API_KEY=<your-api-key>。" >&2
   exit 3
 fi
 
@@ -88,11 +98,7 @@ params = json.loads(params_raw)
 payload = {
     "api_name": path,
     "skill_version": skill_version,
-    "params": params,
 }
-# Some WeRead gateway endpoints read arguments from the top-level payload rather
-# than the nested params object. Keep params for compatibility, and flatten the
-# same values so endpoints like /book/chapterinfo can see bookId.
 payload.update(params)
 req = urllib.request.Request(
     gateway,
@@ -108,7 +114,12 @@ try:
     with urllib.request.urlopen(req, timeout=60) as resp:
         print(resp.read().decode('utf-8'))
 except urllib.error.HTTPError as exc:
-    body = exc.read().decode('utf-8', 'replace')
-    print(f"WeRead API error {exc.code}: {body}", file=sys.stderr)
-    raise SystemExit(1)
+    body = exc.read().decode("utf-8", errors="replace")
+    print(f"WeRead API HTTP {exc.code}: {exc.reason}", file=sys.stderr)
+    if body:
+        print(body, file=sys.stderr)
+    raise SystemExit(4)
+except urllib.error.URLError as exc:
+    print(f"WeRead API 请求失败：{exc.reason}", file=sys.stderr)
+    raise SystemExit(4)
 PY

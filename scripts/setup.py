@@ -28,7 +28,7 @@ def main() -> int:
         return 2
 
     print(f"已写入配置：{args.output.expanduser()}")
-    print("提示：WEREAD_API_KEY 只从环境变量读取，不会写入配置文件。")
+    print("提示：API Key 可通过 scripts/setup_api_key.py 写入私有 key 文件，不会写入配置文件。")
     return 0
 
 

@@ -38,6 +38,33 @@ _KEYWORD_ALIASES = {
     "design": ["设计", "审美", "ui", "ux", "视觉"],
 }
 
+_NON_CONTENT_CHAPTER_TITLES = {
+    "封面",
+    "目录",
+    "版权",
+    "版权页",
+    "版权信息",
+    "书名页",
+    "扉页",
+    "献词",
+    "插图",
+    "插图目录",
+    "内容简介",
+    "作者简介",
+    "前言",
+    "序",
+    "推荐序",
+    "作者序",
+    "再版序",
+}
+
+_BRIEF_TRIGGER_PHRASES = {
+    "今天读什么",
+    "今天读哪一小节",
+    "推荐一章",
+    "推荐一小节",
+}
+
 
 def _tokens(text: str) -> set[str]:
     return {t.lower() for t in re.findall(r"[A-Za-z][A-Za-z0-9_-]*|[\u4e00-\u9fff]{2,}", text)}
@@ -54,8 +81,23 @@ def _expanded_tokens(text: str) -> set[str]:
     return expanded
 
 
+def is_substantive_chapter_title(title: str) -> bool:
+    normalized = re.sub(r"\s+", "", title).strip("：:,.，。！？!?")
+    if not normalized:
+        return False
+    return normalized not in _NON_CONTENT_CHAPTER_TITLES
+
+
+def _has_specific_context(text: str) -> bool:
+    normalized = re.sub(r"\s+", "", text).strip("：:,.，。！？!?")
+    if not normalized:
+        return False
+    return normalized not in _BRIEF_TRIGGER_PHRASES
+
+
 def choose_today_chapter(context: list[ContextItem], chapters: list[Chapter]) -> TodayChapterRecommendation:
     """Pick the chapter most connected to the current context."""
+    chapters = [chapter for chapter in chapters if is_substantive_chapter_title(chapter.title)]
     if not chapters:
         raise ValueError("chapters must not be empty")
     context_text = "\n".join(item.text for item in context)
@@ -68,11 +110,15 @@ def choose_today_chapter(context: list[ContextItem], chapters: list[Chapter]) ->
     chosen = max(chapters, key=score)
     strongest_context = context[0].text if context else "最近上下文不足"
     short_context = strongest_context.replace("\n", " ")[:80]
+    if _has_specific_context(context_text):
+        why = f"你最近的上下文里反复出现「{short_context}」，这一节最接近当前问题。"
+    else:
+        why = "当前没有可用的项目/笔记上下文；我先按微信读书最近书架和笔记里的可读章节推荐这一节。"
 
     return TodayChapterRecommendation(
         book_title=chosen.book_title,
         chapter_title=chosen.title,
-        why=f"你最近的上下文里反复出现「{short_context}」，这一节最接近当前问题。",
+        why=why,
         reading_question="读这一节时只问一个问题：它能解释我最近哪个真实卡点？",
         apply_action="读完后写下一条可以在今天项目里立刻改掉的动作。",
         deep_link=weread_link(chosen.book_id, chosen.chapter_uid),

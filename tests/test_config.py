@@ -1,6 +1,7 @@
 import subprocess
 import sys
 from pathlib import Path
+import stat
 
 import pytest
 
@@ -67,3 +68,26 @@ def test_setup_script_writes_config_non_interactively(tmp_path):
     assert result.returncode == 0
     assert "已写入配置" in result.stdout
     assert load_config(output).mode == "folder"
+
+
+def test_setup_api_key_script_writes_private_key_file(tmp_path):
+    output = tmp_path / "api_key"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "scripts" / "setup_api_key.py"),
+            "--stdin",
+            "--output",
+            str(output),
+        ],
+        input="wrk-test-key\n",
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+    )
+
+    assert result.returncode == 0
+    assert output.read_text(encoding="utf-8") == "wrk-test-key\n"
+    assert stat.S_IMODE(output.stat().st_mode) == 0o600
+    assert "wrk-test-key" not in result.stdout

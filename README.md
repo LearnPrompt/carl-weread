@@ -64,14 +64,22 @@ scripts/install_skill.py
 然后在新 Agent 的环境里配置：
 
 ```bash
-export WEREAD_API_KEY="wrk-你的微信读书 API Key"
+scripts/setup_api_key.py
 ```
 
 ## 安装前置
 
 `carl-weread` 不要求用户先安装官方 WeRead Skill；它把微信读书 API 调用封装在自己的 `scripts/weread.sh` 里。
 
-但它需要官方微信读书 API Key：
+但它需要官方微信读书 API Key。推荐首次运行一次安全初始化：
+
+```bash
+scripts/setup_api_key.py
+```
+
+它会把 key 写入 `~/.config/carl-weread/api_key`，文件权限为 `600`，不会写入 `config.toml`，也不会打印 key。
+
+也可以只在当前 shell 临时使用：
 
 ```bash
 export WEREAD_API_KEY="wrk-你的微信读书 API Key"
@@ -112,7 +120,12 @@ scripts/setup.py --mode weread-only
 
 配置默认写入：`~/.config/carl-weread/config.toml`。
 
-`WEREAD_API_KEY` 只从环境变量读取，不会写入配置文件。
+API Key 读取优先级：
+
+1. 环境变量 `WEREAD_API_KEY`
+2. 私有文件 `~/.config/carl-weread/api_key`
+
+API Key 不会写入 `config.toml`。
 
 代码层面已经支持 Folder Mode 和 Chat Mode：
 
@@ -130,7 +143,7 @@ python3 -m venv .venv
 
 ## 一键今日推荐
 
-完成配置和 `WEREAD_API_KEY` 后，日常使用可以直接跑：
+完成上下文配置和 API Key 初始化后，日常使用可以直接跑：
 
 ```bash
 scripts/today_live.py \
@@ -147,7 +160,7 @@ scripts/today_live.py \
 
 ## 候选章节生成
 
-有 `WEREAD_API_KEY` 后，可以直接从真实微信读书数据生成候选章节：
+有 API Key 后，可以直接从真实微信读书数据生成候选章节：
 
 ```bash
 scripts/fetch_candidates.py \
