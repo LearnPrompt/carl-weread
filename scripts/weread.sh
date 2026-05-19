@@ -80,15 +80,20 @@ fi
 params="$(build_params_json "$@")"
 
 python3 - "$GATEWAY" "$path" "$SKILL_VERSION" "$params" <<'PY'
-import json, os, sys, urllib.request
+import json, os, sys, urllib.error, urllib.request
 
 gateway, path, skill_version, params_raw = sys.argv[1:]
 api_key = os.environ["WEREAD_API_KEY"]
+params = json.loads(params_raw)
 payload = {
     "api_name": path,
     "skill_version": skill_version,
-    "params": json.loads(params_raw),
+    "params": params,
 }
+# Some WeRead gateway endpoints read arguments from the top-level payload rather
+# than the nested params object. Keep params for compatibility, and flatten the
+# same values so endpoints like /book/chapterinfo can see bookId.
+payload.update(params)
 req = urllib.request.Request(
     gateway,
     data=json.dumps(payload, ensure_ascii=False).encode('utf-8'),
@@ -99,6 +104,11 @@ req = urllib.request.Request(
     },
     method="POST",
 )
-with urllib.request.urlopen(req, timeout=60) as resp:
-    print(resp.read().decode('utf-8'))
+try:
+    with urllib.request.urlopen(req, timeout=60) as resp:
+        print(resp.read().decode('utf-8'))
+except urllib.error.HTTPError as exc:
+    body = exc.read().decode('utf-8', 'replace')
+    print(f"WeRead API error {exc.code}: {body}", file=sys.stderr)
+    raise SystemExit(1)
 PY

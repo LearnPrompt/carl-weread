@@ -8,15 +8,15 @@
 
 它会读取你的微信读书书架、笔记和最近阅读，再结合你的 Obsidian 日记、项目和选题，推荐一个今天能读完的小阅读块。读完后，它把收获变成行动卡，回流到你的项目和内容创作里。
 
-## 现在的 V0.1
+## 现在的 V0.2：文章可演示完成版
 
-V0.1 先不做大而全，只验证一个闭环：
+V0.2 已经把主链路补成可演示闭环：
 
 ```text
 最近真实上下文 → 识别当下问题 → 匹配微信读书的一章/一小节 → 给读前问题 → 读后生成行动卡
 ```
 
-已搭建：
+已完成：
 
 - `scripts/weread.sh`：微信读书 API 的薄 CLI 包装层。
 - `carl_weread/config.py`：首次配置与上下文模式（Obsidian/Folder/Chat/WeRead-only）。
@@ -27,8 +27,45 @@ V0.1 先不做大而全，只验证一个闭环：
 - `scripts/build_candidates.py`：从已保存的 WeRead API JSON 构建候选章节文件。
 - `scripts/fetch_candidates.py`：调用 `scripts/weread.sh` 拉取真实 WeRead 数据并生成候选章节文件。
 - `scripts/today_live.py`：一键拉取真实 WeRead 数据并输出今日一小节推荐，不需要中间候选文件。
+- `carl_weread/digest_apply.py` + `scripts/digest_apply.py`：把读后划线生成阅读行动卡，可输出或写回。
+- `carl_weread/writeback.py`：按 Obsidian/Folder/Chat/WeRead-only 模式处理落盘。
+- `carl_weread/weekly_loop.py` + `scripts/weekly_loop.py`：从本周行动卡生成阅读行动复盘。
+- `scripts/install_skill.py`：把完整仓库安装成 Hermes skill 目录，避免只安装 `SKILL.md`。
 - `SKILL.md` + `workflows/`：Agent Skill 工作流契约。
-- `tests/`：核心格式化、上下文收集、章节选择的测试。
+- `tests/`：覆盖 API helper、配置、上下文、推荐、行动卡、写回、周复盘。
+
+
+## 完整安装到新的 Hermes Agent
+
+如果只是执行：
+
+```bash
+hermes skills install https://raw.githubusercontent.com/LearnPrompt/carl-weread/main/SKILL.md
+```
+
+Hermes 只会安装 `SKILL.md`，适合加载说明，但不会带上 `scripts/`、`carl_weread/` 和测试文件。
+
+要完整体验这个 skill，推荐在新 Agent 机器上直接 clone 整个仓库：
+
+```bash
+git clone https://github.com/LearnPrompt/carl-weread ~/.hermes/skills/carl-weread
+cd ~/.hermes/skills/carl-weread
+python3 -m venv .venv
+.venv/bin/python -m pip install -U pip pytest
+.venv/bin/python -m pytest tests -q
+```
+
+或者在已 clone 的仓库里执行完整安装脚本：
+
+```bash
+scripts/install_skill.py
+```
+
+然后在新 Agent 的环境里配置：
+
+```bash
+export WEREAD_API_KEY="wrk-你的微信读书 API Key"
+```
 
 ## 安装前置
 
@@ -161,6 +198,40 @@ scripts/weread.sh chapters --bookId=BOOK_ID
 scripts/weread.sh progress --bookId=BOOK_ID
 ```
 
+
+## 读后行动卡与写回
+
+读完一节后，可以把划线/想法变成行动卡：
+
+```bash
+scripts/digest_apply.py \
+  --book-title "AI Engineering" \
+  --chapter-title "Evals and workflows" \
+  --highlight "Agent 不是聊天框，而是模型、工具、上下文和验证的组合。" \
+  --current-problem "我在写一篇介绍 carl-weread 的文章，需要把阅读变成可演示动作。"
+```
+
+如果已经配置了 Obsidian 或 Folder Mode，可以写回到默认目录：
+
+```bash
+scripts/digest_apply.py \
+  --book-title "AI Engineering" \
+  --chapter-title "Evals and workflows" \
+  --highlight "Agent 不是聊天框，而是模型、工具、上下文和验证的组合。" \
+  --current-problem "我在写文章，需要一个真实案例。" \
+  --writeback
+```
+
+## 本周阅读行动复盘
+
+从一组行动卡生成周复盘：
+
+```bash
+scripts/weekly_loop.py \
+  --cards /path/to/reading-cards \
+  --context "本周在写 Agent Skill 文章，也在验证 carl-weread 的安装链路"
+```
+
 ## Skill 入口
 
 典型触发语：
@@ -194,7 +265,8 @@ carl-weread/
 └── tests/
 ```
 
-## 下一步
+## 当前边界
 
-- 真实 API 字段兼容性与候选排序策略需要继续用样本加固。
-- 生成「阅读行动卡」并按用户模式写回 Obsidian、普通文件夹，或只在对话中返回。
+- 今日推荐、读后行动卡、文件写回、周复盘都已经有可运行 CLI 和测试。
+- 真实 API 字段兼容性已按当前样本适配，但后续仍建议用更多书籍类型继续加固。
+- 写回会写入真实 Obsidian vault 或普通文件夹；Chat/WeRead-only 模式默认只在对话中返回，不写文件。

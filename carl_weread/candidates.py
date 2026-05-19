@@ -57,6 +57,18 @@ def extract_book_refs(payload: Any, limit: int | None = None) -> list[BookRef]:
     return refs
 
 
+def _is_readable_chapter(title: str, item: dict[str, Any]) -> bool:
+    normalized = title.strip()
+    if not normalized:
+        return False
+    if normalized in {"封面", "版权信息", "目录", "扉页", "献词", "插图", "内容简介", "作者简介", "前言", "序", "推荐序", "作者序", "再版序"}:
+        return False
+    word_count = item.get("wordCount") or item.get("word_count")
+    if isinstance(word_count, int) and word_count <= 20:
+        return False
+    return True
+
+
 def chapters_from_chapterinfo(book_id: str, book_title: str, payload: Any) -> list[Chapter]:
     chapters: list[Chapter] = []
     for item in _unwrap_items(payload, ("chapters", "chapterInfos", "chapterInfo")):
@@ -64,6 +76,8 @@ def chapters_from_chapterinfo(book_id: str, book_title: str, payload: Any) -> li
             continue
         chapter_uid = _string_value(item, ("chapter_uid", "chapterUid", "uid", "chapterId", "id"))
         title = _string_value(item, ("title", "chapterName", "name"))
+        if not _is_readable_chapter(title, item):
+            continue
         if chapter_uid and title:
             chapters.append(Chapter(book_id=book_id, book_title=book_title, chapter_uid=chapter_uid, title=title))
     return chapters

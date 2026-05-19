@@ -1,7 +1,7 @@
 ---
 name: carl-weread
 description: 微信读书行动型阅读教练。根据用户最近的 Obsidian 日记、项目、选题和微信读书书架/笔记，推荐今天最该读的一小节，并把读后收获转成行动卡、原子笔记和内容选题线索。当用户说「今天读什么」「推荐一章」「读完了帮我消化」「把阅读变成行动」「本周阅读闭环」时触发。
-version: 0.1.0
+version: 0.2.0
 author: Carl / LearnPrompt
 license: MIT
 metadata:
@@ -81,6 +81,8 @@ metadata:
 - 今日推荐优先用 `scripts/today_live.py --brief ...` 一键执行真实 WeRead 拉取和推荐。
 - 候选章节可以用 `scripts/fetch_candidates.py --output ...` 从真实 WeRead API 拉取，或用 `scripts/build_candidates.py` 从已保存 JSON 离线生成。
 - 调试时也可以用 `scripts/today.py --config ... --chapters ...` 串联本地候选章节验证。
+- 读后消化用 `scripts/digest_apply.py`，可打印行动卡、写到指定 `--output`，或 `--writeback` 写回配置目标。
+- 周复盘用 `scripts/weekly_loop.py --cards ... --context ...`。
 - 章节选择逻辑通过 `carl_weread.today_chapter` 执行。
 - 输出格式遵守 `shared/output-style.md`。
 
@@ -95,7 +97,10 @@ metadata:
 ## Verification Checklist
 
 - [ ] `scripts/weread.sh --help` 可运行。
+- [ ] `scripts/today_live.py --brief ...` 可生成今日一小节。
+- [ ] `scripts/digest_apply.py ... --writeback` 可生成/写回阅读行动卡。
+- [ ] `scripts/weekly_loop.py --cards ...` 可生成周复盘。
 - [ ] `python -m pytest tests -q` 通过。
 - [ ] `SKILL.md` frontmatter 合法，description 未超 1024 字符。
 - [ ] 三个 workflow 文件存在。
-- [ ] README 能让第一次看到的人理解差异化。
+- [ ] README 能让第一次看到的人理解差异化和完整安装方式。
